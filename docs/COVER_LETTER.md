@@ -33,7 +33,7 @@ INCR tasks:list:version:{team_id}
 
 ### Инфраструктура кода
 
-- **CI/CD**: в репозитории нет `.github/workflows` — весь прогон тестов/линта сейчас ручной, через `make test`/`make lint`. Нужен PR-пайплайн (`go vet` → `golangci-lint` → `go test -race` с `testcontainers-go`, значит раннеру нужен Docker → `govulncheck`), сборка образа с тегом = SHA коммита, и миграции как отдельный явный шаг деплоя (`goose up` перед раскаткой), с обратно совместимыми (purely additive) миграциями на время rolling-деплоя.
+- **CI/CD**: в репозитории нет CI-пайплайна — весь прогон тестов/линта сейчас ручной, через `make test`/`make lint`. Нужен PR-пайплайн (`go vet` → `golangci-lint` → `go test -race` с `testcontainers-go`, значит раннеру нужен Docker → `govulncheck`), сборка образа с тегом = SHA коммита, и миграции как отдельный явный шаг деплоя. Перед реальным `goose up` — dry-run на копии прод-схемы (снапшот staging-БД, накатить и сразу откатить в CI): это ловит синтаксические ошибки и долгие блокировки на прод-объёме данных до раската, а не просто печатает SQL, как `goose up --dry-run` без реальной БД. Сам `goose up` — только после этого и перед раскаткой, с обратно совместимыми (purely additive) миграциями на время rolling-деплоя.
 - **Contract-тест Swagger vs факт**: `swag init` генерирует спеку из аннотаций рядом с хендлерами, но ничто не проверяет автоматически, что аннотация не разошлась с реальным телом ответа.
 - **Параллельные тесты**: добавить `t.Parallel()` в юнит-тесты; для интеграционных — сначала перейти на транзакционную изоляцию (rollback вместо пересоздания схемы), затем `t.Parallel()`.
 
@@ -78,6 +78,7 @@ INCR tasks:list:version:{team_id}
 
 **База данных:**
 - Managed MySQL (RDS Multi-AZ) вместо самостоятельно управляемой — automated backups и point-in-time recovery из коробки
+- Стоит рассмотреть и PostgreSQL вместо MySQL: строже стандартный SQL, `EXPLAIN (ANALYZE, BUFFERS)` удобнее для разбора тяжёлых аналитических запросов ниже, лучше ведёт себя под смешанной OLTP+аналитической нагрузкой на одной БД. Цена перехода некритичная, но не нулевая: `internal/repository/mysqlerr.go` завязан на код ошибки MySQL-драйвера (`1062` — duplicate entry), а `NOW() - INTERVAL 7 DAY` в `analytics_repository.go` — MySQL-синтаксис интервала (в Postgres `INTERVAL '7 days'`)
 - ElastiCache для Redis — кеш и rate limiter уже спроектированы как fail-open при недоступности Redis, так что требование к его доступности мягче, чем к MySQL, но failover и патчинг всё равно не то, что стоит писать руками
 - Read-реплика для трёх аналитических отчётов (JOIN трёх таблиц, оконная функция, `NOT EXISTS`) — самых тяжёлых запросов в сервисе — по мере роста нагрузки
 
@@ -85,7 +86,8 @@ INCR tasks:list:version:{team_id}
 - SQS (или RabbitMQ вне облака) для асинхронной отправки приглашений — нагрузка "одно событие на один invite" — это command queue, а не event stream с множеством consumer'ов и требованием replay, так что Kafka здесь была бы инфраструктурным оверинжинирингом
 
 **CI/CD:**
-- GitHub Actions — пайплайн описан выше; интеграционным тестам на `testcontainers-go` нужен Docker, то есть `services:` в managed-раннере либо self-hosted раннер
+- GitLab CI — пайплайн описан выше; интеграционным тестам на `testcontainers-go` нужен Docker-in-Docker (`services: [docker:dind]` с `privileged`-executor), а shared-раннеры GitLab.com privileged-режим не дают — нужен self-hosted раннер (Kubernetes executor с DinD либо Docker executor с примонтированным `/var/run/docker.sock`)
+- Отдельный protected-раннер под деплой-стадии (`goose up`, `kubectl apply`) с доступом к прод-секретам — обычные раннеры этот доступ иметь не должны
 
 **Наблюдаемость:**
 - Prometheus + Grafana + Loki + Tempo — продолжение уже начатого стека (метрики уже на `client_golang`), а не переход на SaaS-конкурента, который означал бы переписывать рабочую инструментацию без функциональной необходимости

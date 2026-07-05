@@ -159,4 +159,5 @@ make test-integration
 
 ---
 
-Выбор технологий, рекомендации для production и инфраструктура описаны в [docs/COVER_LETTER.md](docs/COVER_LETTER.md).
+- Техническое задание: [docs/ТЗ Go.docx](docs/ТЗ%20Go.docx)
+- Выбор технологий, рекомендации для production и инфраструктура описаны в [docs/COVER_LETTER.md](docs/COVER_LETTER.md).

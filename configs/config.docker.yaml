@@ -1,0 +1,28 @@
+http:
+  addr: ":8080"
+  read_timeout: 10s
+  write_timeout: 15s
+  idle_timeout: 60s
+  shutdown_timeout: 15s
+
+db:
+  host: "mysql"
+  port: 3306
+  user: "app"
+  password: ""
+  name: "team_task"
+  max_open_conns: 25
+  max_idle_conns: 25
+  conn_max_lifetime: 5m
+
+redis:
+  addr: "redis:6379"
+  password: ""
+  db: 0
+
+jwt:
+  secret: ""
+  ttl: 24h
+
+log:
+  level: "info"

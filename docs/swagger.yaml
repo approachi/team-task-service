@@ -1,0 +1,687 @@
+basePath: /api/v1
+definitions:
+  dto.CreateTaskRequest:
+    properties:
+      assignee_to:
+        type: integer
+      description:
+        type: string
+      team_id:
+        type: integer
+      title:
+        type: string
+    type: object
+  dto.CreateTeamRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  dto.HistoryEntryResponse:
+    properties:
+      changed_at:
+        type: string
+      changed_by:
+        type: integer
+      field_name:
+        type: string
+      id:
+        type: integer
+      new_value:
+        type: string
+      old_value:
+        type: string
+      task_id:
+        type: integer
+    type: object
+  dto.InviteRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  dto.InviteResponse:
+    properties:
+      role:
+        $ref: '#/definitions/model.Role'
+      team_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  dto.LoginResponse:
+    properties:
+      expires_at:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/dto.UserResponse'
+    type: object
+  dto.OptionalInt64:
+    properties:
+      set:
+        type: boolean
+      value:
+        format: int64
+        type: integer
+    type: object
+  dto.OptionalString:
+    properties:
+      set:
+        type: boolean
+      value:
+        type: string
+    type: object
+  dto.OrphanedTaskResponse:
+    properties:
+      assignee_email:
+        type: string
+      assignee_id:
+        type: integer
+      assignee_name:
+        type: string
+      task_id:
+        type: integer
+      team_id:
+        type: integer
+      team_name:
+        type: string
+    type: object
+  dto.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  dto.TaskResponse:
+    properties:
+      assignee_to:
+        type: integer
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      description:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      team_id:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.TeamMembershipResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/model.Role'
+    type: object
+  dto.TeamResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.TeamSummaryResponse:
+    properties:
+      done_tasks_last_7_days:
+        type: integer
+      member_count:
+        type: integer
+      team_id:
+        type: integer
+      team_name:
+        type: string
+    type: object
+  dto.TopCreatorResponse:
+    properties:
+      rank:
+        type: integer
+      tasks_created:
+        type: integer
+      team_id:
+        type: integer
+      team_name:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
+  dto.UpdateTaskRequest:
+    properties:
+      assignee_to:
+        $ref: '#/definitions/dto.OptionalInt64'
+      description:
+        $ref: '#/definitions/dto.OptionalString'
+      status:
+        $ref: '#/definitions/dto.OptionalString'
+      title:
+        $ref: '#/definitions/dto.OptionalString'
+    type: object
+  dto.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  httpx.Envelope:
+    properties:
+      data: {}
+      meta:
+        $ref: '#/definitions/httpx.Meta'
+    type: object
+  httpx.ErrorBody:
+    properties:
+      code:
+        type: string
+      details:
+        additionalProperties:
+          type: string
+        type: object
+      message:
+        type: string
+    type: object
+  httpx.ErrorEnvelope:
+    properties:
+      error:
+        $ref: '#/definitions/httpx.ErrorBody'
+    type: object
+  httpx.Meta:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+    type: object
+  model.Role:
+    enum:
+    - owner
+    - admin
+    - member
+    type: string
+    x-enum-varnames:
+    - RoleOwner
+    - RoleAdmin
+    - RoleMember
+info:
+  contact: {}
+  description: 'REST API for team task management (Phase 1: auth, teams, tasks, audit
+    history).'
+  title: Team Task Service API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LoginResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      summary: Log in and receive a JWT
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Registration payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      summary: Register a new user
+      tags:
+      - auth
+  /reports/orphaned-assignees:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.OrphanedTaskResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: 'Integrity check: tasks whose assignee is not a member of the task''s
+        team'
+      tags:
+      - reports
+  /reports/teams-summary:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.TeamSummaryResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Per-team member count and done-tasks-in-last-7-days, for the caller's
+        teams
+      tags:
+      - reports
+  /reports/top-creators:
+    get:
+      parameters:
+      - description: YYYY-MM, defaults to the current month
+        in: query
+        name: month
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.TopCreatorResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: 'Top-3 task creators per team for a given month (default: current month)'
+      tags:
+      - reports
+  /tasks:
+    get:
+      parameters:
+      - description: Team ID
+        in: query
+        name: team_id
+        required: true
+        type: integer
+      - description: todo|in_progress|done
+        in: query
+        name: status
+        type: string
+      - description: Assignee user ID
+        in: query
+        name: assignee_to
+        type: integer
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.TaskResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List tasks in a team, filtered and paginated
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.TaskResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Create a task
+      tags:
+      - tasks
+  /tasks/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.TaskResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Update a task (partial)
+      tags:
+      - tasks
+  /tasks/{id}/history:
+    get:
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.HistoryEntryResponse'
+                  type: array
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Get a task's audit history
+      tags:
+      - tasks
+  /teams:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.TeamMembershipResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List teams the caller belongs to
+      tags:
+      - teams
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.TeamResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Create a team (caller becomes owner)
+      tags:
+      - teams
+  /teams/{id}/invite:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Invitee email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.InviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.InviteResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Invite an existing user to a team
+      tags:
+      - teams
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and the JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

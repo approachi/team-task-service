@@ -1,6 +1,6 @@
 //go:build integration
 
-package integration
+package repository_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/zhuk/team-task-service/internal/model"
 	"github.com/zhuk/team-task-service/internal/repository"
-	"github.com/zhuk/team-task-service/test/integration/testhelper"
+	"github.com/zhuk/team-task-service/internal/repository/testhelper"
 )
 
 // TestAnalyticsRepository_Integration exercises the three ТЗ-required

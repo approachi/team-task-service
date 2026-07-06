@@ -36,7 +36,7 @@ test-unit: ## run unit tests only
 	go test ./... -race -count=1
 
 test-integration: ## run integration tests (requires local Docker for testcontainers-go)
-	go test ./test/... -tags=integration -race -count=1
+	go test ./internal/repository/... -tags=integration -race -count=1
 
 test: test-unit test-integration ## run unit AND integration tests
 

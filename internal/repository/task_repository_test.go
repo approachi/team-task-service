@@ -1,6 +1,6 @@
 //go:build integration
 
-package integration
+package repository_test
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/zhuk/team-task-service/internal/apperr"
 	"github.com/zhuk/team-task-service/internal/model"
 	"github.com/zhuk/team-task-service/internal/repository"
-	"github.com/zhuk/team-task-service/test/integration/testhelper"
+	"github.com/zhuk/team-task-service/internal/repository/testhelper"
 )
 
 // TestTaskRepository_Integration proves the harness end-to-end against a
